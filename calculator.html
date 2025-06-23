@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Web</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #f0f0f0;
+        }
+        .calculator {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            width: 300px;
+        }
+        .display {
+            background: #a8b5a8;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            text-align: right;
+            font-size: 24px;
+            font-family: 'Digital', monospace;
+            min-height: 30px;
+            word-wrap: break-word;
+        }
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        button {
+            padding: 15px;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .number {
+            background: #666;
+            color: white;
+        }
+        .operator {
+            background: #ff9500;
+            color: white;
+        }
+        .clear {
+            background: #ff3b30;
+            color: white;
+        }
+        .equals {
+            background: #34c759;
+            color: white;
+        }
+        button:hover {
+            opacity: 0.8;
+        }
+        .error {
+            color: #ff3b30;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display" id="display">0</div>
+        <div class="buttons">
+            <button class="clear" onclick="clearDisplay()">C</button>
+            <button class="operator" onclick="appendOperator('/')">/</button>
+            <button class="operator" onclick="appendOperator('*')">×</button>
+            <button class="operator" onclick="backspace()">⌫</button>
+            
+            <button class="number" onclick="appendNumber('7')">7</button>
+            <button class="number" onclick="appendNumber('8')">8</button>
+            <button class="number" onclick="appendNumber('9')">9</button>
+            <button class="operator" onclick="appendOperator('-')">-</button>
+            
+            <button class="number" onclick="appendNumber('4')">4</button>
+            <button class="number" onclick="appendNumber('5')">5</button>
+            <button class="number" onclick="appendNumber('6')">6</button>
+            <button class="operator" onclick="appendOperator('+')">+</button>
+            
+            <button class="number" onclick="appendNumber('1')">1</button>
+            <button class="number" onclick="appendNumber('2')">2</button>
+            <button class="number" onclick="appendNumber('3')">3</button>
+            <button class="equals" onclick="calculate()" style="grid-row: span 2;">=</button>
+            
+            <button class="number" onclick="appendNumber('0')" style="grid-column: span 2;">0</button>
+            <button class="number" onclick="appendNumber('.')">.</button>
+        </div>
+        <div id="error" class="error"></div>
+    </div>
+
+    <script>
+        let displayValue = '0';
+        let lastResult = null;
+        const display = document.getElementById('display');
+        const errorDiv = document.getElementById('error');
+
+        function updateDisplay() {
+            display.textContent = displayValue;
+        }
+
+        function appendNumber(num) {
+            if (displayValue === '0' || lastResult !== null) {
+                displayValue = num;
+                lastResult = null;
+            } else {
+                displayValue += num;
+            }
+            updateDisplay();
+        }
+
+        function appendOperator(operator) {
+            if (lastResult !== null) {
+                displayValue = lastResult + operator;
+                lastResult = null;
+            } else {
+                displayValue += operator;
+            }
+            updateDisplay();
+        }
+
+        function clearDisplay() {
+            displayValue = '0';
+            lastResult = null;
+            updateDisplay();
+            errorDiv.style.display = 'none';
+        }
+
+        function backspace() {
+            if (displayValue.length > 1) {
+                displayValue = displayValue.slice(0, -1);
+            } else {
+                displayValue = '0';
+            }
+            updateDisplay();
+        }
+
+        async function calculate() {
+            try {
+                const response = await fetch('/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        expression: displayValue
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayValue = data.result.toString();
+                    lastResult = displayValue;
+                    updateDisplay();
+                    errorDiv.style.display = 'none';
+                } else {
+                    errorDiv.textContent = data.error;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Erro ao realizar o cálculo';
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (event) => {
+            const key = event.key;
+            if (/[0-9]/.test(key)) {
+                appendNumber(key);
+            } else if (['+', '-', '*', '/'].includes(key)) {
+                appendOperator(key);
+            } else if (key === 'Enter') {
+                calculate();
+            } else if (key === 'Escape') {
+                clearDisplay();
+            } else if (key === 'Backspace') {
+                backspace();
+            } else if (key === '.') {
+                appendNumber('.');
+            }
+        });
+    </script>
+</body>
+</html> 
+</html> 
